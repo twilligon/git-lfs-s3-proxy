@@ -31,9 +31,9 @@ function parseAuthorization(req) {
   }
 
   const buffer = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
-  const decoded = new TextDecoder().decode(buffer).normalize();
+  const decoded = new TextDecoder().decode(buffer);
   const index = decoded.indexOf(":");
-  if (index === -1 || /[\0-\x1F\x7F]/.test(decoded)) {
+  if (index === -1) {
     throw new Response(null, { status: 400 });
   }
 
