@@ -62,6 +62,25 @@
       list-style: none;
     }
 
+    .copy-btn {
+      margin-left: 0.5em;
+      padding: 0.5em 1em;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 0.25em;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .copy-btn:hover {
+      background-color: #0052a3;
+    }
+
+    .copy-btn.copied {
+      background-color: #00aa00;
+    }
+
     summary h2:before {
       content: "▶️ ";
       margin-bottom: 0;
@@ -377,27 +396,27 @@
   </div>
 
   <div class="service-info b2 hide">
-    <p>TODO: when creating bucket have textbox for this</p>
+    <p class="small"><strong>Note:</strong> The endpoint URL for your bucket can be found on the <a href="https://secure.backblaze.com/b2_buckets.htm">Buckets page</a> after creating your bucket. Make sure to enter it in the Endpoint field above.</p>
   </div>
 
   <div class="service-info wasabi hide">
-    <p>TODO</p>
+    <p class="small"><strong>Tip:</strong> Wasabi charges for a minimum of 90 days of storage. If you delete files before 90 days, you'll still be charged for the full 90 days. Choose a region close to your users for best performance.</p>
   </div>
 
   <div class="service-info s3 hide">
-    <p>TODO</p>
+    <p class="small"><strong>Cost Tip:</strong> Consider using S3 Intelligent-Tiering or S3 One Zone-IA for infrequently accessed LFS objects to reduce storage costs. For even lower costs, consider Cloudflare R2 or Backblaze B2 instead.</p>
   </div>
 
   <div class="service-info google hide">
-    <p>TODO</p>
+    <p class="small"><strong>Note:</strong> Google Cloud Storage uses <code>storage.googleapis.com</code> as the endpoint for all regions. Make sure to use HMAC keys (not service account JSON keys) for S3-compatible access.</p>
   </div>
 
   <div class="service-info linode hide">
-    <p>TODO</p>
+    <p class="small"><strong>Tip:</strong> Linode Object Storage includes 1 TB of outbound transfer per month. After that, transfer is charged at $0.01/GB. Choose a cluster close to your users for best performance.</p>
   </div>
 
   <div class="service-info do hide">
-    <p>TODO</p>
+    <p class="small"><strong>Note:</strong> DigitalOcean Spaces includes 1 TB of outbound transfer per month. Additional transfer is charged at $0.01/GB. Each Space (bucket) costs $5/month for 250 GB of storage.</p>
   </div>
 
   <details>
@@ -440,6 +459,7 @@
 
   <h2>Find your LFS server URL</h2>
   <code id="url">Please enable JavaScript or <a href="https://github.com/milkey-mouse/git-lfs-s3-proxy?tab=readme-ov-file#find-your-lfs-server-url">find the URL manually</a>.</code>
+  <button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy URL</button>
 
   <h2>Configure Git to use your LFS server</h2>
   <p>Git can be told about the new LFS server in two ways, with slightly different tradeoffs.</p>
@@ -602,6 +622,18 @@ git push --all --force-with-lease
     bucket.placeholder += "-";
     for (let i = 0; i < 8; i++) {
       bucket.placeholder += base36.charAt(Math.floor(Math.random() * 36));
+    }
+
+    function copyUrl() {
+      const copyBtn = document.getElementById("copy-btn");
+      navigator.clipboard.writeText(document.getElementById("url").textContent).then(() => {
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "Copy URL";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      });
     }
 
     updateUrl();
