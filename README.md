@@ -167,3 +167,21 @@ You're now ready to [start using Git LFS](https://github.com/git-lfs/git-lfs#exa
       git fetch --all
       git lfs migrate import --everything --above=25MiB
       git push --all --force-with-lease
+
+# Limitations
+
+## Linode `service` parameter
+
+When using Linode Object Storage, the `aws4fetch` library used by this proxy may incorrectly guess the AWS service name for Linode endpoints. This causes AWS Signature V4 authentication to fail with authorization errors, as the signature is computed with the wrong service parameter.
+
+To work around this issue, you must explicitly specify `service=s3` in your LFS URL by adding `/service=s3` to the path after the instance hostname and before the endpoint:
+
+    https://<ACCESS_KEY_ID>:<SECRET_ACCESS_KEY>@<INSTANCE>/service=s3/<ENDPOINT>/<BUCKET>
+
+For example, if you're using a Linode bucket named `my-repo` in the `us-sea-1` region with access key ID `foo` and secret access key `bar`, your LFS URL would be:
+
+    https://foo:bar@git-lfs-s3-proxy.pages.dev/service=s3/us-sea-1.linodeobjects.com/my-repo
+
+Without the `service=s3` parameter, you may encounter authorization errors during `git push` operations, even with correct credentials.
+
+See [#10](https://github.com/twilligon/git-lfs-s3-proxy/issues/10) and [this comment](https://github.com/twilligon/git-lfs-s3-proxy/issues/10#issuecomment-1897816901) for more details.
