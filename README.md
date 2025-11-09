@@ -155,6 +155,16 @@ You're now ready to [start using Git LFS](https://github.com/git-lfs/git-lfs#exa
 
 # Quirks
 
+### Disable Git LFS file locking
+
+Git LFS S3 Proxy does not support the [Git LFS File Locking API](https://github.com/git-lfs/git-lfs/blob/main/docs/api/locking.md), which would require additional infrastructure. Without this configuration, Git will show a persistent warning on every push/pull ([#6](https://github.com/twilligon/git-lfs-s3-proxy/issues/6)). To disable the warning:
+
+    git config lfs.<YOUR_LFS_URL>.locksverify false
+
+Or to disable it globally for all LFS servers:
+
+    git config --global lfs.locksverify false
+
 ### No multipart upload support
 
 Git LFS S3 Proxy does not currently support [multipart uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html) for large files. Files that exceed S3's single-part upload limit (typically 5 GB, but some providers use lower limits) will fail with HTTP 413 errors ([#7](https://github.com/twilligon/git-lfs-s3-proxy/issues/7)).
