@@ -113,21 +113,6 @@ If you were already using Git LFS, ensure any existing LFS objects are uploaded 
 
     git lfs push --all origin
 
-### GitLab only: Disable built-in LFS
-
-GitLab "helpfully" rejects commits containing "missing" LFS objects. After configuring a non-GitLab LFS server, GitLab will consider all new LFS objects "missing" and reject new commits:
-
-    remote: GitLab: LFS objects are missing. Ensure LFS is properly set up or try a manual "git lfs push --all".
-    To gitlab.com:twilligon/lfs-test
-     ! [remote rejected] main -> main (pre-receive hook declined)
-    error: failed to push some refs to 'gitlab.com:twilligon/lfs-test'
-
-To disable this "feature", disable LFS on the GitLab repository. This can be done via the repository's GitLab page with **Settings** > **General** > **Visibility, project features, permissions** (click **Expand**) > **Repository** > **Git Large File Storage (LFS)** (disable, then click **Save changes**), or via the API:
-
-    curl --request PUT --header "PRIVATE-TOKEN: <your-token>" \
-     --url "https://gitlab.com/api/v4/projects/<your-project-ID>" \
-     --data "lfs_enabled=false"
-
 ### Using Git LFS
 
 After [configuring your LFS server](#configure-git-to-use-your-lfs-server), you can set up and use Git LFS as usual.
@@ -168,9 +153,24 @@ You're now ready to [start using Git LFS](https://github.com/git-lfs/git-lfs#exa
       git lfs migrate import --everything --above=25MiB
       git push --all --force-with-lease
 
-# Limitations
+# Quirks
 
-### DigitalOcean/Linode `service=s3` parameter
+### GitLab: Disable built-in LFS
+
+GitLab "helpfully" rejects commits containing "missing" LFS objects. After configuring a non-GitLab LFS server, GitLab will consider all new LFS objects "missing" and reject new commits:
+
+    remote: GitLab: LFS objects are missing. Ensure LFS is properly set up or try a manual "git lfs push --all".
+    To gitlab.com:twilligon/lfs-test
+     ! [remote rejected] main -> main (pre-receive hook declined)
+    error: failed to push some refs to 'gitlab.com:twilligon/lfs-test'
+
+To disable this "feature", disable LFS on the GitLab repository. This can be done via the repository's GitLab page with **Settings** > **General** > **Visibility, project features, permissions** (click **Expand**) > **Repository** > **Git Large File Storage (LFS)** (disable, then click **Save changes**), or via the API:
+
+    curl --request PUT --header "PRIVATE-TOKEN: <your-token>" \
+     --url "https://gitlab.com/api/v4/projects/<your-project-ID>" \
+     --data "lfs_enabled=false"
+
+### DigitalOcean/Linode: `service=s3` parameter
 
 The `aws4fetch` library we use currently incorrectly guesses the `service` parameter for [DigitalOcean Spaces](https://github.com/mhart/aws4fetch/issues/15) or [Linode Object Storage](https://github.com/twilligon/git-lfs-s3-proxy/issues/10), which causes signatures to be computed with the wrong value for that parameter, which causes signature verification to fail, which causes authentication to fail, which causes `git-lfs-s3-proxy` to [fail](https://github.com/twilligon/git-lfs-s3-proxy/issues/10) as if your credentials are incorrect.
 
