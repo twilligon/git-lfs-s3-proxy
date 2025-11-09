@@ -493,6 +493,11 @@ git commit -m "Add .lfsconfig"
   <p>Even if the Git LFS binary was already installed, the smudge and clean filters Git LFS relies upon may not be. Ensure they are installed for your user account:</p>
   <pre><code>git lfs install
 </code></pre>
+  <h3>Disable Git LFS file locking</h3>
+  <p>Git LFS S3 Proxy does not support the <a href="https://github.com/git-lfs/git-lfs/blob/main/docs/api/locking.md">Git LFS File Locking API</a>, which would require additional infrastructure. Without this configuration, Git will show a persistent warning on every push/pull. To disable the warning, run:</p>
+  <pre><code id="locksverify-cmd">git config lfs.&lt;YOUR_LFS_URL&gt;.locksverify false</code></pre>
+  <button class="copy-btn" id="copy-locks-btn" onclick="copyLocksCmd()">Copy Command</button>
+  <p class="small">Or disable it globally for all LFS servers: <code>git config --global lfs.locksverify false</code></p>
   <h3>Upload existing LFS objects</h3>
   <p>If you were already using Git LFS, ensure any existing LFS objects are uploaded to the new server:</p>
   <pre><code>git lfs push --all
@@ -613,9 +618,12 @@ git push --all --force-with-lease
 
       const bucketVal = bucket.value || "<BUCKET>";
 
-      document.getElementById("url").textContent =
-        "https://" + accessKeyVal + ":" + secretKeyVal + "@"
+      const urlText = "https://" + accessKeyVal + ":" + secretKeyVal + "@"
         + instanceVal + "/" + endpoint() + "/" + bucketVal;
+
+      document.getElementById("url").textContent = urlText;
+      document.getElementById("locksverify-cmd").textContent =
+        "git config lfs." + urlText + ".locksverify false";
     }
 
     const base36 = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -631,6 +639,18 @@ git push --all --force-with-lease
         copyBtn.classList.add("copied");
         setTimeout(() => {
           copyBtn.textContent = "Copy URL";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      });
+    }
+
+    function copyLocksCmd() {
+      const copyBtn = document.getElementById("copy-locks-btn");
+      navigator.clipboard.writeText(document.getElementById("locksverify-cmd").textContent).then(() => {
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "Copy Command";
           copyBtn.classList.remove("copied");
         }, 2000);
       });
