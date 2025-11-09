@@ -88,10 +88,25 @@ async function fetch(req, env) {
   const bucket = segments.slice(bucketIdx).join("/");
   const expires_in = params.expiry || env.EXPIRY || EXPIRY;
 
-  const { objects, operation } = await req.json();
+  const { objects, operation, hash_algo = "sha256" } = await req.json();
+
+  // Validate hash algorithm - currently only sha256 is supported
+  if (hash_algo !== "sha256") {
+    return new Response(
+      JSON.stringify({
+        message: `Hash algorithm '${hash_algo}' is not supported. Only 'sha256' is currently supported.`
+      }),
+      {
+        status: 409,
+        headers: { "Content-Type": "application/vnd.git-lfs+json" }
+      }
+    );
+  }
+
   const method = METHOD_FOR[operation];
   const response = JSON.stringify({
     transfer: "basic",
+    hash_algo: "sha256",
     objects: await Promise.all(objects.map(async ({ oid, size }) => ({
       oid, size,
       authenticated: true,
