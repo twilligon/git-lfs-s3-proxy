@@ -7,6 +7,10 @@ This [Cloudflare Pages](https://pages.cloudflare.com/) site acts as a [Git LFS](
 
 # Usage
 
+**Quick Start**: Visit the [interactive quickstart guide](https://git-lfs-s3-proxy.pages.dev) to automatically generate your LFS server URL with step-by-step instructions.
+
+Or follow the manual setup instructions below:
+
 ### Create a bucket
 
 First, create a bucket on an S3-compatible object store to host your LFS assets. In roughly increasing order of cost (as of 2023-08-05), your options include:

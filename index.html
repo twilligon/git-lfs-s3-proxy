@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Git LFS S3 Proxy Quickstart</title>
+  <style>
+    body {
+      font-size: large;
+      margin: 0 auto;
+      line-height: 1.5;
+      max-width: 30em;
+      padding: 0 1em;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .flip {
+      display: inline-block;
+      transform: scaleX(-1);
+    }
+
+    noscript {
+      background-color: #fcc;
+      display: block;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      text-align: center;
+    }
+
+    select {
+      padding: 0.4em 0.5em;
+    }
+
+    .hide {
+      display: none;
+    }
+
+    .input-group {
+      display: flex;
+      margin-bottom: 0.5em;
+    }
+
+    .input-group label {
+      flex: 0 0 auto;
+      font-weight: bold;
+      margin-right: 0.5em;
+    }
+
+    .input-group * {
+      flex: 1;
+    }
+
+    .small {
+      color: #777;
+      font-size: 0.75em;
+    }
+
+    summary {
+      list-style: none;
+    }
+
+    .copy-btn {
+      margin-left: 0.5em;
+      padding: 0.5em 1em;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 0.25em;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .copy-btn:hover {
+      background-color: #0052a3;
+    }
+
+    .copy-btn.copied {
+      background-color: #00aa00;
+    }
+
+    summary h2:before {
+      content: "▶️ ";
+      margin-bottom: 0;
+
+    }
+
+    details[open] summary h2:before {
+      content: "🔽 ";
+    }
+
+    details:not([open]) summary h2 {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>💪📄<span class="flip">💪</span><br><a href="https://github.com/milkey-mouse/git-lfs-s3-proxy">Git LFS S3 Proxy</a> Quickstart</h1>
+  <p><a href="https://github.com/milkey-mouse/git-lfs-s3-proxy">Git LFS S3 Proxy</a> acts as a <a href="https://git-lfs.com/">Git LFS</a> server backed by any S3-compatible storage provider. Here's how to get up and running as quickly as possible.</p>
+
+  <noscript>
+    JavaScript is disabled. Enable JavaScript to automatically generate the LFS URL, or follow <a href="https://github.com/milkey-mouse/git-lfs-s3-proxy?tab=readme-ov-file#find-your-lfs-server-url">the README</a> to generate it manually.
+  </noscript>
+
+  <h2>Choose repo visibility</h2>
+  <p>Choosing between a public or private repository affects how you manage access to your Git LFS server. For a public repository, it's recommended to have a single <code>.lfsconfig</code> file checked in with a read-only LFS URL. This allows anyone to clone and pull from the repository without being able to push changes to the LFS objects. Contributors with write access will need to configure their local clone with a read/write LFS URL using <code>git config lfs.url</code> to override the read-only URL. This ensures that only authorized users can push changes to the LFS server.</p>
+  <p>For a private repository, where all collaborators are trusted with write access, you can check in the <code>.lfsconfig</code> file with the read/write LFS URL. This simplifies the setup for all users, as they won't need to perform additional configuration steps. However, be aware that this approach exposes your LFS server's write access credentials within the repository.</p>
+
+  <div class="input-group">
+    <label for="visibility">Repo visibility:</label>
+    <select id="visibility">
+      <option value="public" selected>Public</option>
+      <option value="private">Private</option>
+    </select>
+  </div>
+
+  <h2>Choose a provider</h2>
+  <p>There are many storage providers implementing the S3 API. Cloudflare R2 is a good default choice as it's very cheap (often free) and colocated with the worker. Options in the dropdown are ordered roughly by cost.</p>
+
+  <div class="input-group">
+    <label for="provider">Storage provider:</label>
+    <select id="provider">
+      <option value="r2" selected>Cloudflare R2</option>
+      <option value="b2">Backblaze B2</option>
+      <option value="wasabi">Wasabi</option>
+      <option value="s3">Amazon S3</option>
+      <option value="google">Google Cloud Storage</option>
+      <option value="linode">Linode Object Storage</option>
+      <option value="do">DigitalOcean Spaces</option>
+    </select>
+  </div>
+
+  <div class="service-info r2">
+    <h2>Find your account ID</h2>
+    <p>For Cloudflare R2, <a href="https://developers.cloudflare.com/r2/api/s3/api/#:~:text=The%20API%20is%20available%20via%20the%20https%3A//%3CACCOUNT_ID%3E.r2.cloudflarestorage.com%20endpoint.">your endpoint URL depends solely on your account ID</a>, which you can find <a href="https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/">on the Cloudflare dashboard</a>.<p>
+
+    <div class="input-group">
+      <label for="cf-account-id">Cloudflare Account ID:</label>
+      <input type="text" id="cf-account-id" placeholder="7795d95f5507a0c89bd1ed3de8b57061">
+    </div>
+  </div>
+
+  <h2>Create a bucket</h2>
+
+  <div class="service-info r2">
+    <p>First, <a href="https://developers.cloudflare.com/r2/buckets/create-buckets/">create a bucket</a>.</p>
+  </div>
+
+  <div class="service-info b2 hide">
+    <p>First, <a href="https://help.backblaze.com/hc/en-us/articles/1260803542610-Creating-a-B2-Bucket-using-the-Web-UI">create a bucket</a>. After creating a bucket, note the <strong>Endpoint</strong> for the bucket on the <a href="https://secure.backblaze.com/b2_buckets.htm">Buckets</a> page.</p>
+
+    <div class="input-group">
+      <label for="b2-endpoint">Endpoint:</label>
+      <input type="text" id="b2-endpoint" placeholder="s3.us-west-001.backblazeb2.com">
+    </div>
+  </div>
+
+  <div class="service-info wasabi hide">
+    <p>First, <a href="https://docs.wasabi.com/docs/creating-a-bucket">create a bucket</a>. Note your bucket's region, which determines the endpoint through which it's accessible.</p>
+
+    <div class="input-group">
+      <label for="wasabi-endpoint">Bucket Region:</label>
+      <select id="wasabi-endpoint">
+        <option value="s3.wasabisys.com">us-east-1 — US East 1 (N. Virginia)</option>
+        <option value="s3.us-east-2.wasabisys.com">us-east-2 — US East 2 (N. Virginia)</option>
+        <option value="s3.us-central-1.wasabisys.com">us-central-1 — US Central 1 (Texas)</option>
+        <option value="s3.us-west-1.wasabisys.com">us-west-1 — US West 1 (Oregon)</option>
+        <option value="s3.ca-central-1.wasabisys.com">ca-central-1 — CA Central 1 (Toronto)</option>
+        <option value="s3.eu-central-1.wasabisys.com">eu-central-1 — EU Central 1 (Amsterdam)</option>
+        <option value="s3.eu-central-2.wasabisys.com">eu-central-2 — EU Central 2 (Frankfurt)</option>
+        <option value="s3.eu-west-1.wasabisys.com">eu-west-1 — EU West 1 (London)</option>
+        <option value="s3.eu-west-2.wasabisys.com">eu-west-2 — EU West 2 (Paris)</option>
+        <option value="s3.ap-northeast-1.wasabisys.com">ap-northeast-1 — AP Northeast 1 (Tokyo)</option>
+        <option value="s3.ap-northeast-2.wasabisys.com">ap-northeast-2 — AP Northeast 2 (Osaka)</option>
+        <option value="s3.ap-southeast-1.wasabisys.com">ap-southeast-1 — AP Southeast 1 (Singapore)</option>
+        <option value="s3.ap-southeast-2.wasabisys.com">ap-southeast-2 — AP Southeast 2 (Sydney)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="service-info s3 hide">
+    <p>First, <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html">create a bucket</a>. Note your bucket's region, which determines the endpoint through which it's accessible.</p>
+
+    <div class="input-group">
+      <label for="s3-endpoint">Bucket Region:</label>
+      <select id="s3-endpoint">
+        <option value="s3.dualstack.us-east-2.amazonaws.com">us-east-2 — US East (Ohio)</option>
+        <option value="s3.dualstack.us-east-1.amazonaws.com">us-east-1 — US East (N. Virginia)</option>
+        <option value="s3.dualstack.us-west-1.amazonaws.com">us-west-1 — US West (N. California)</option>
+        <option value="s3.dualstack.us-west-2.amazonaws.com">us-west-2 — US West (Oregon)</option>
+        <option value="s3.dualstack.af-south-1.amazonaws.com">af-south-1 — Africa (Cape Town)</option>
+        <option value="s3.dualstack.ap-east-1.amazonaws.com">ap-east-1 — Asia Pacific (Hong Kong)</option>
+        <option value="s3.dualstack.ap-south-2.amazonaws.com">ap-south-2 — Asia Pacific (Hyderabad)</option>
+        <option value="s3.dualstack.ap-southeast-3.amazonaws.com">ap-southeast-3 — Asia Pacific (Jakarta)</option>
+        <option value="s3.dualstack.ap-southeast-4.amazonaws.com">ap-southeast-4 — Asia Pacific (Melbourne)</option>
+        <option value="s3.dualstack.ap-south-1.amazonaws.com">ap-south-1 — Asia Pacific (Mumbai)</option>
+        <option value="s3.dualstack.ap-northeast-3.amazonaws.com">ap-northeast-3 — Asia Pacific (Osaka)</option>
+        <option value="s3.dualstack.ap-northeast-2.amazonaws.com">ap-northeast-2 — Asia Pacific (Seoul)</option>
+        <option value="s3.dualstack.ap-southeast-1.amazonaws.com">ap-southeast-1 — Asia Pacific (Singapore)</option>
+        <option value="s3.dualstack.ap-southeast-2.amazonaws.com">ap-southeast-2 — Asia Pacific (Sydney)</option>
+        <option value="s3.dualstack.ap-northeast-1.amazonaws.com">ap-northeast-1 — Asia Pacific (Tokyo)</option>
+        <option value="s3.dualstack.ca-central-1.amazonaws.com">ca-central-1 — Canada (Central)</option>
+        <option value="s3.dualstack.ca-west-1.amazonaws.com">ca-west-1 — Canada West (Calgary)</option>
+        <option value="s3.dualstack.eu-central-1.amazonaws.com">eu-central-1 — Europe (Frankfurt)</option>
+        <option value="s3.dualstack.eu-west-1.amazonaws.com">eu-west-1 — Europe (Ireland)</option>
+        <option value="s3.dualstack.eu-west-2.amazonaws.com">eu-west-2 — Europe (London)</option>
+        <option value="s3.dualstack.eu-south-1.amazonaws.com">eu-south-1 — Europe (Milan)</option>
+        <option value="s3.dualstack.eu-west-3.amazonaws.com">eu-west-3 — Europe (Paris)</option>
+        <option value="s3.dualstack.eu-south-2.amazonaws.com">eu-south-2 — Europe (Spain)</option>
+        <option value="s3.dualstack.eu-north-1.amazonaws.com">eu-north-1 — Europe (Stockholm)</option>
+        <option value="s3.dualstack.eu-central-2.amazonaws.com">eu-central-2 — Europe (Zurich)</option>
+        <option value="s3.dualstack.il-central-1.amazonaws.com">il-central-1 — Israel (Tel Aviv)</option>
+        <option value="s3.dualstack.me-south-1.amazonaws.com">me-south-1 — Middle East (Bahrain)</option>
+        <option value="s3.dualstack.me-central-1.amazonaws.com">me-central-1 — Middle East (UAE)</option>
+        <option value="s3.dualstack.sa-east-1.amazonaws.com">sa-east-1 — South America (São Paulo)</option>
+        <option value="s3.dualstack.us-gov-east-1.amazonaws.com">us-gov-east-1 — AWS GovCloud (US-East)</option>
+        <option value="s3.dualstack.us-gov-west-1.amazonaws.com">us-gov-west-1 — AWS GovCloud (US-West)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="service-info google hide">
+    <p>First, <a href="https://cloud.google.com/storage/docs/creating-buckets">create a bucket</a>.</p>
+  </div>
+
+  <div class="service-info linode hide">
+    <p>First, <a href="https://www.linode.com/docs/products/storage/object-storage/guides/manage-buckets/">create a bucket</a>. Note your bucket's <a href="https://www.linode.com/docs/products/storage/object-storage/guides/urls/#cluster-url-s3-endpoint">Cluster ID</a>, which determines the endpoint through which it's accessible.</p>
+
+    <div class="input-group">
+      <label for="linode-endpoint">Cluster ID:</label>
+      <select id="linode-endpoint">
+        <option value="nl-ams-1.linodeobjects.com">nl-ams-1 — Amsterdam (Netherlands)</option>
+        <option value="us-southeast-1.linodeobjects.com">us-southeast-1 — Atlanta, GA (USA)</option>
+        <option value="in-maa-1.linodeobjects.com">in-maa-1 — Chennai (India)</option>
+        <option value="us-ord-1.linodeobjects.com">us-ord-1 — Chicago, IL (USA)</option>
+        <option value="eu-central-1.linodeobjects.com">eu-central-1 — Frankfurt (Germany)</option>
+        <option value="id-cgk-1.linodeobjects.com">id-cgk-1 — Jakarta (Indonesia)</option>
+        <option value="us-lax-1.linodeobjects.com">us-lax-1 — Los Angeles, CA (USA)</option>
+        <option value="us-mia-1.linodeobjects.com">us-mia-1 — Miami, FL (USA)</option>
+        <option value="it-mil-1.linodeobjects.com">it-mil-1 — Milan (Italy)</option>
+        <option value="us-east-1.linodeobjects.com">us-east-1 — Newark, NJ (USA)</option>
+        <option value="jp-osa-1.linodeobjects.com">jp-osa-1 — Osaka (Japan)</option>
+        <option value="fr-par-1.linodeobjects.com">fr-par-1 — Paris (France)</option>
+        <option value="br-gru-1.linodeobjects.com">br-gru-1 — São Paulo (Brazil)</option>
+        <option value="us-sea-1.linodeobjects.com">us-sea-1 — Seattle, WA (USA)</option>
+        <option value="ap-south-1.linodeobjects.com">ap-south-1 — Singapore</option>
+        <option value="se-sto-1.linodeobjects.com">se-sto-1 — Stockholm (Sweden)</option>
+        <option value="us-iad-1.linodeobjects.com">us-iad-1 — Washington, DC (USA)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="service-info do hide">
+    <p>First, <a href="https://docs.digitalocean.com/products/spaces/how-to/create/">create a bucket</a>. Note your bucket's region, which determines the endpoint through which it's accessible.</p>
+
+    <div class="input-group">
+      <label for="do-endpoint">Bucket Region:</label>
+      <select id="do-endpoint">
+        <option value="nyc3.digitaloceanspaces.com">NYC3 — New York City, United States</option>
+        <option value="ams3.digitaloceanspaces.com">AMS3 — New York City, United States</option>
+        <option value="sfo2.digitaloceanspaces.com">SFO2 — San Francisco, United States</option>
+        <option value="sfo3.digitaloceanspaces.com">SFO3 — San Francisco, United States</option>
+        <option value="sgp1.digitaloceanspaces.com">SGP1 — Singapore</option>
+        <option value="fra1.digitaloceanspaces.com">FRA1 — Frankfurt, Germany</option>
+        <option value="blr1.digitaloceanspaces.com">BLR1 — Bangalore, India</option>
+        <option value="syd1.digitaloceanspaces.com">SYD1 — Sydney, Australia</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label for="bucket">Bucket Name:</label>
+    <input type="text" id="bucket" placeholder="lfs-s3-proxy">
+  </div>
+
+  <div class="service-info r2">
+    <h2>Create an API token</h2>
+    <p>Next, <a href="https://developers.cloudflare.com/r2/api/s3/tokens/">create an API token</a> to allow Git LFS S3 Proxy to access the bucket:</p>
+    <ol>
+      <li>Log into the Cloudflare dashboard as the root user.</li>
+      <li>Navigate to the "R2" section.</li>
+      <li>Under "Account details," select "Manage R2 API tokens."</li>
+      <li>Select <strong>Create API token</strong>.</li>
+      <li>Under <strong>Permissions</strong>, choose a permission type for your token. Refer to Permissions for information about each option.</li>
+      <li>(Optional) If you select "Object Read and Write" or "Object Read" permissions, you can scope your token to a set of buckets.</li>
+      <li>Select <strong>Create API Token</strong>.</li>
+    </ol>
+
+    <h2>Permissions</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Permission</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Admin Read and Write</td>
+          <td>Allows the ability to create, list and delete buckets, and edit bucket configurations in addition to list, write, and read object access.</td>
+        </tr>
+        <tr>
+          <td>Admin Read only</td>
+          <td>Allows the ability to list buckets and view bucket configuration in addition to list and read object access.</td>
+        </tr>
+        <tr>
+          <td>Object Read & Write</td>
+          <td>Allows the ability to read, write, and list objects in specific buckets.</td>
+        </tr>
+        <tr>
+          <td>Object Read only</td>
+          <td>Allows the ability to read and list objects in specific buckets.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="service-info b2 hide">
+    <h2>Create an Application Key</h2>
+    <p>Next, <a href="https://www.backblaze.com/docs/cloud-storage-create-and-manage-app-keys">generate Master Application Key</a> and then create an Application Key:</p>
+    <ol>
+      <li>Sign in to your Backblaze account.</li>
+      <li>In the left navigation menu under Account, click <strong>Application Keys</strong>.</li>
+      <li>To generate a new Master App Key, select <strong>Generate New Master Application Key</strong>.</li>
+      <li>Create an Application Key by clicking on <strong>Add a New Application Key</strong>, and enter an app key name.</li>
+      <li>Select your access type (e.g., Read and Write) and other appropriate options.</li>
+      <li>Click <strong>Create New Key</strong>.</li>
+    </ol>
+  </div>
+
+  <div class="service-info wasabi hide">
+    <h2>Create an Access Key</h2>
+    <p>Next, <a href="https://knowledgebase.wasabi.com/hc/en-us/articles/360019677192-Creating-a-Wasabi-API-Access-Key-Set">create a Wasabi API Access Key Set</a>:</p>
+    <ol>
+      <li>Log into the Wasabi Console as the root user.</li>
+      <li>Click on the Menu tab and select the Access Keys item.</li>
+      <li>Click the CREATE NEW ACCESS KEY button.</li>
+      <li>Select the CREATE button.</li>
+    </ol>
+  </div>
+
+  <div class="service-info s3 hide">
+    <h2>Create an access key</h2>
+    <p>Next, to <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey">create your access keys</a>:</p>
+    <ol>
+      <li>Sign in to the <a href="https://console.aws.amazon.com/iam">IAM console</a> with your IAM user.</li>
+      <li>In the navigation bar, choose your user name, then select <b>Security credentials</b>.</li>
+      <li>Select <b>Create access key</b>.</li>
+    </ol>
+  </div>
+
+  <div class="service-info google hide">
+    <h2>Create an access key</h2>
+    <p>Next, for a service account, <a href="https://cloud.google.com/storage/docs/authentication/managing-hmackeys">create a key for a service account</a>:</p>
+    <ol>
+      <li>In the Google Cloud console, go to the Cloud Storage Settings page.</li>
+      <li>Select the <strong>Interoperability</strong> tab.</li>
+      <li>Click <strong>Create a key for a service account</strong>.</li>
+      <li>Select the service account; then click <strong>Create key</strong>.</li>
+      <li>Store the key's <em>secret</em> securely, as it won't be accessible later.</li>
+    </ol>
+  </div>
+
+  <div class="service-info linode hide">
+    <h2>Create an access key pair</h2>
+    <p>Next, to <a href="https://www.linode.com/docs/products/storage/object-storage/get-started/#generate-an-access-key">generate an access key pair</a>:</p>
+    <ol>
+      <li>Log into the Linode Cloud Manager.</li>
+      <li>Click on the Object Storage link in the sidebar, then the Access Keys tab.</li>
+      <li>Click <strong>Create an Access Key</strong> and enable Object Storage if prompted.</li>
+      <li>Enter a label for the key pair and click Submit.</li>
+    </ol>
+  </div>
+
+  <div class="service-info do hide">
+    <h2>Create an access key</h2>
+    <p>Next, to <a href="https://docs.digitalocean.com/products/spaces/how-to/manage-access/#access-keys">generate Spaces access keys</a>:</p>
+    <ol>
+      <li>From the control panel, click <strong>API</strong>.</li>
+      <li>Navigate to the <strong>Spaces Keys</strong> tab.</li>
+      <li>Select <strong>Generate New Key</strong> and enter a name for the key.</li>
+      <li>Copy the access key and secret key when they're displayed as you cannot see the secret key again.</li>
+    </ol>
+  </div>
+
+  <div class="input-group">
+    <label for="access-key" id="access-key-label">Access Key ID:</label>
+    <input type="text" id="access-key" placeholder="AKIAIOSFODNN7EXAMPLE">
+  </div>
+
+  <div class="input-group">
+    <label for="secret-key" id="secret-key-label">Secret Access Key:</label>
+    <input type="text" id="secret-key" placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY">
+  </div>
+
+  <div class="service-info b2 hide">
+    <p class="small"><strong>Note:</strong> The endpoint URL for your bucket can be found on the <a href="https://secure.backblaze.com/b2_buckets.htm">Buckets page</a> after creating your bucket. Make sure to enter it in the Endpoint field above.</p>
+  </div>
+
+  <div class="service-info wasabi hide">
+    <p class="small"><strong>Tip:</strong> Wasabi charges for a minimum of 90 days of storage. If you delete files before 90 days, you'll still be charged for the full 90 days. Choose a region close to your users for best performance.</p>
+  </div>
+
+  <div class="service-info s3 hide">
+    <p class="small"><strong>Cost Tip:</strong> Consider using S3 Intelligent-Tiering or S3 One Zone-IA for infrequently accessed LFS objects to reduce storage costs. For even lower costs, consider Cloudflare R2 or Backblaze B2 instead.</p>
+  </div>
+
+  <div class="service-info google hide">
+    <p class="small"><strong>Note:</strong> Google Cloud Storage uses <code>storage.googleapis.com</code> as the endpoint for all regions. Make sure to use HMAC keys (not service account JSON keys) for S3-compatible access.</p>
+  </div>
+
+  <div class="service-info linode hide">
+    <p class="small"><strong>Tip:</strong> Linode Object Storage includes 1 TB of outbound transfer per month. After that, transfer is charged at $0.01/GB. Choose a cluster close to your users for best performance.</p>
+    <p class="small"><strong>⚠️ Known Issue:</strong> Due to an <a href="https://github.com/mhart/aws4fetch/issues/15">aws4fetch library bug</a>, you may need to add <code>service=s3</code> to your URL path. If you get authentication errors, use this format: <code>https://...@INSTANCE/service=s3/ENDPOINT/BUCKET</code>. See <a href="#troubleshooting">troubleshooting</a> below.</p>
+  </div>
+
+  <div class="service-info do hide">
+    <p class="small"><strong>Note:</strong> DigitalOcean Spaces includes 1 TB of outbound transfer per month. Additional transfer is charged at $0.01/GB. Each Space (bucket) costs $5/month for 250 GB of storage.</p>
+    <p class="small"><strong>⚠️ Known Issue:</strong> Due to an <a href="https://github.com/mhart/aws4fetch/issues/15">aws4fetch library bug</a>, you may need to add <code>service=s3</code> to your URL path. If you get authentication errors, use this format: <code>https://...@INSTANCE/service=s3/ENDPOINT/BUCKET</code>. See <a href="#troubleshooting">troubleshooting</a> below.</p>
+  </div>
+
+  <details>
+    <summary><h2>Deploy your own proxy instance <span class="small">(optional)</span></h2></summary>
+    <div>
+      <p>The default instance of Git LFS S3 Proxy can be used by any project. However, there are a few reasons you might want to run your own:</p>
+      <ul>
+        <li>The default instance runs under the Cloudflare free tier, so it can "only" handle around 100,000 requests per day.</li>
+        <li>The proxy sees your endpoint URL, bucket name, and access key, so malicious instances could read or modify your LFS content.</li>
+        <li>To stop using the default instance, every commit in your repo must be rewritten to update its LFS server URL, or LFS objects referenced in old commits become inaccessible.</li>
+        <li>If you deploy your own instance:
+          <ul>
+            <li>You could instead update it to redirect to a new LFS server.</li>
+            <li>If your instance uses your own domain name, you could point it at a self-hosted LFS server in this scenario.</li>
+          </ul>
+        </li>
+      </ul>
+      <p>The proxy is stateless, so you can switch instances just by changing your LFS server URL. If the underlying bucket remains the same, the old URL will continue to work.</p>
+      <p>To host your own instance of the proxy:</p>
+      <ol>
+        <li><a href="https://github.com/milkey-mouse/git-lfs-s3-proxy/fork">Fork</a> <code>milkey-mouse/git-lfs-s3-proxy</code> to your account.</li>
+        <li>Follow the <a href="https://developers.cloudflare.com/pages/get-started/guide/">Cloudflare Pages Get Started guide</a>:</li>
+        <li>Sign up for Cloudflare if you haven't already:
+          <ol>
+            <li>Create a new Pages site.</li>
+            <li>Add your GitHub account to Pages.</li>
+            <li>Grant access to your fork of <code>milkey-mouse/git-lfs-s3-proxy</code>.</li>
+            <li>Set up your Pages site: set <strong>Build command</strong> to <code>npm install</code> and leave all other settings on their defaults.</li>
+          </ol>
+        </li>
+        <li>If you own a domain name (e.g., <code>example.com</code>), you can <a href="https://developers.cloudflare.com/pages/platform/custom-domains/#add-a-custom-cname-record">add a CNAME record</a> to point a subdomain (e.g., <code>git-lfs-s3-proxy.example.com</code>) at your instance. If you don't own a domain, a <code>pages.dev</code> subdomain will work just as well, except you'll have to change your LFS server URL if you ever stop using the proxy.</li>
+      </ol>
+    </div>
+
+    <div class="input-group">
+      <label for="instance">Proxy Instance:</label>
+      <input type="text" id="instance" placeholder="git-lfs-s3-proxy.pages.dev">
+    </div>
+  </details>
+
+  <h2>Find your LFS server URL</h2>
+  <code id="url">Please enable JavaScript or <a href="https://github.com/milkey-mouse/git-lfs-s3-proxy?tab=readme-ov-file#find-your-lfs-server-url">find the URL manually</a>.</code>
+  <button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy URL</button>
+
+  <h2>Configure Git to use your LFS server</h2>
+  <p>Git can be told about the new LFS server in two ways, with slightly different tradeoffs.</p>
+
+  <h3>Public repo</h3>
+  <p>If only certain people with copies of your repo are allowed to write to it, you should <a href="#create-an-access-key">create another access key</a> with only read permission for your bucket. Then, <a href="#find-your-url">create another server URL</a> using the read-only access key. Finally, add the server URL containing the <strong>read-only access key</strong> to an <code>.lfsconfig</code> file in the root of your repository:</p>
+  <pre><code>cd "$(git rev-parse --show-toplevel)"  # move to root of repository
+git config -f .lfsconfig lfs.url 'https://&lt;RO_ACCESS_KEY_ID&gt;:&lt;RO_SECRET_ACCESS_KEY&gt;@&lt;INSTANCE&gt;/&lt;ENDPOINT&gt;/&lt;BUCKET&gt;'
+git add .lfsconfig
+git commit -m "Add .lfsconfig"
+</code></pre>
+  <p>To allow a clone of this repo to write to Git LFS, add the server URL containing the <strong>read/write access key</strong> to its <code>.git/config</code>:</p>
+  <pre><code>git config lfs.url 'https://&lt;RW_ACCESS_KEY_ID&gt;:&lt;RW_SECRET_ACCESS_KEY&gt;@&lt;INSTANCE&gt;/&lt;ENDPOINT&gt;/&lt;BUCKET&gt;'
+</code></pre>
+  <p>This config file is not checked into the repository, so the read/write access key remains private.</p>
+  <h3>Private repo</h3>
+  <p>If you're working with a private repository where everyone with a clone of the repo <strong>already has read/write access</strong>, you may want to skip generating another access key and manually adding the read/write key to each clone that needs it. (Even in this case, the <a href="#public-repo">public repo approach</a> is marginally more secure, but the tradeoff may be worth it for convenience's sake.) To set the LFS server URL for everyone at once, granting anyone with a copy of the repo read/write access to the LFS server, put the LFS server URL containing the read/write access key in <code>.lfsconfig</code>:</p>
+  <pre><code>cd "$(git rev-parse --show-toplevel)"  # move to root of repository
+git config -f .lfsconfig lfs.url 'https://&lt;RW_ACCESS_KEY_ID&gt;:&lt;RW_SECRET_ACCESS_KEY&gt;@&lt;INSTANCE&gt;/&lt;ENDPOINT&gt;/&lt;BUCKET&gt;'
+git add .lfsconfig
+git commit -m "Add .lfsconfig"
+</code></pre>
+  <h2>Using Git LFS</h2>
+  <p>After <a href="#configure-git-to-use-your-lfs-server">configuring your LFS server</a>, you can set up and use Git LFS as usual.</p>
+  <h3>Install Git LFS</h3>
+  <p>If you haven't used Git LFS before, you may need to install it. Run the following command:</p>
+  <pre><code>git lfs version
+</code></pre>
+  <p>If your output includes <code>git: 'lfs' is not a git command</code>, then follow the Git LFS <a href="https://github.com/git-lfs/git-lfs#installing">installation instructions</a>.</p>
+  <h3>Install smudge and clean filters</h3>
+  <p>Even if the Git LFS binary was already installed, the smudge and clean filters Git LFS relies upon may not be. Ensure they are installed for your user account:</p>
+  <pre><code>git lfs install
+</code></pre>
+  <h3>Disable Git LFS file locking</h3>
+  <p>Git LFS S3 Proxy does not support the <a href="https://github.com/git-lfs/git-lfs/blob/main/docs/api/locking.md">Git LFS File Locking API</a>, which would require additional infrastructure. Without this configuration, Git will show a persistent warning on every push/pull. To disable the warning, run:</p>
+  <pre><code id="locksverify-cmd">git config lfs.&lt;YOUR_LFS_URL&gt;.locksverify false</code></pre>
+  <button class="copy-btn" id="copy-locks-btn" onclick="copyLocksCmd()">Copy Command</button>
+  <p class="small">Or disable it globally for all LFS servers: <code>git config --global lfs.locksverify false</code></p>
+  <h3>Upload existing LFS objects</h3>
+  <p>If you were already using Git LFS, ensure any existing LFS objects are uploaded to the new server:</p>
+  <pre><code>git lfs push --all origin
+</code></pre>
+  <h3>GitLab: Disable built-in LFS</h3>
+  <p>GitLab "helpfully" rejects commits containing "missing" LFS objects. After configuring a non-GitLab LFS server, GitLab will consider all new LFS objects "missing" and reject new commits:</p>
+  <pre><code>remote: GitLab: LFS objects are missing. Ensure LFS is properly set up or try a manual "git lfs push --all".
+To gitlab.com:twilligon/lfs-test
+ ! [remote rejected] main -&gt; main (pre-receive hook declined)
+error: failed to push some refs to 'gitlab.com:twilligon/lfs-test'</code></pre>
+  <p>To disable this "feature", disable LFS on the GitLab repository. This can be done via the repository's GitLab page with <strong>Settings</strong> &gt; <strong>General</strong> &gt; <strong>Visibility, project features, permissions</strong> (click <strong>Expand</strong>) &gt; <strong>Repository</strong> &gt; <strong>Git Large File Storage (LFS)</strong> (disable, then click <strong>Save changes</strong>), or via the API:</p>
+  <pre><code>curl --request PUT --header "PRIVATE-TOKEN: &lt;your-token&gt;" \
+ --url "https://gitlab.com/api/v4/projects/&lt;your-project-ID&gt;" \
+ --data "lfs_enabled=false"</code></pre>
+  <h3>Start using LFS</h3>
+  <p>You're now ready to <a href="https://github.com/git-lfs/git-lfs#example-usage">start using Git LFS</a>. For example:</p>
+  <ul>
+    <li>
+      <p>To add any <code>.iso</code> files added in future commits to Git LFS, use <a href="https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-track.adoc"><code>git lfs track</code></a>:</p>
+      <pre><code>git lfs track '*.iso'
+git add .gitattributes
+git commit -m "Add .iso files to Git LFS"
+</code></pre>
+    </li>
+    <li>
+      <p>To add all existing <code>.iso</code> files to Git LFS (which <a href="https://stackoverflow.com/q/1491001">rewrites history</a>, so be careful), use <a href="https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-migrate.adoc"><code>git lfs migrate</code></a>:</p>
+      <pre><code>git fetch --all
+git lfs migrate import --everything --include='*.iso'
+git push --all --force-with-lease
+</code></pre>
+    </li>
+    <li>
+      <p>To add all existing files above 25 MiB to Git LFS (which <a href="https://stackoverflow.com/q/1491001">rewrites history</a>, so be careful), use <a href="https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-migrate.adoc"><code>git lfs migrate</code></a>:</p>
+      <pre><code>git fetch --all
+git lfs migrate import --everything --above=25MiB
+git push --all --force-with-lease
+</code></pre>
+    </li>
+  </ul>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+
+  <h3>DigitalOcean/Linode: <code>service=s3</code> parameter</h3>
+  <p>The <code>aws4fetch</code> library we use currently incorrectly guesses the <code>service</code> parameter for <a href="https://github.com/mhart/aws4fetch/issues/15">DigitalOcean Spaces</a> or <a href="https://github.com/twilligon/git-lfs-s3-proxy/issues/10">Linode Object Storage</a>, which causes signatures to be computed with the wrong value for that parameter, which causes signature verification to fail, which causes authentication to fail, which causes <code>git-lfs-s3-proxy</code> to <a href="https://github.com/twilligon/git-lfs-s3-proxy/issues/10">fail</a> as if your credentials are incorrect.</p>
+
+  <p>Hopefully <code>aws4fetch</code> merges the <a href="https://github.com/mhart/aws4fetch/pull/79">fix</a> and this becomes unnecessary. Until then, if you encounter this issue, explicitly set <code>service=s3</code> to the path in your instance URL after the hostname but before the endpoint:</p>
+
+  <pre><code>https://&lt;ACCESS_KEY_ID&gt;:&lt;SECRET_ACCESS_KEY&gt;@&lt;INSTANCE&gt;/service=s3/&lt;ENDPOINT&gt;/&lt;BUCKET&gt;</code></pre>
+
+  <p>For example, with a Linode bucket <code>my-repo</code> in <code>us-east-1</code> region with access key ID <code>foo</code> and secret access key <code>bar</code> via the default instance:</p>
+
+  <pre><code>https://foo:bar@git-lfs-s3-proxy.pages.dev/service=s3/us-east-1.linodeobjects.com/my-repo</code></pre>
+
+  <script>
+    const services = {
+      "r2": {
+        "accessKey": "Access Key ID",
+        "secretKey": "Secret Access Key"
+      },
+      "b2": {
+        "accessKey": "keyID",
+        "secretKey": "applicationKey"
+      },
+      "wasabi": {
+        "accessKey": "Access Key",
+        "secretKey": "Secret Key"
+      },
+      "s3": {
+        "accessKey": "Access Key ID",
+        "secretKey": "Secret Access Key"
+      },
+      "google": {
+        "accessKey": "Access Key ID",
+        "secretKey": "Secret Access Key"
+      },
+      "linode": {
+        "accessKey": "Access Key",
+        "secretKey": "Secret Key"
+      },
+      "do": {
+        "accessKey": "Access Key",
+        "secretKey": "Secret Key"
+      }
+    };
+
+    const provider = document.getElementById("provider");
+
+    const cfAccountId = document.getElementById("cf-account-id");
+
+    const bucket = document.getElementById("bucket");
+
+    const accessKeyLabel = document.getElementById("access-key-label");
+    const accessKey = document.getElementById("access-key");
+
+    const secretKeyLabel = document.getElementById("secret-key-label");
+    const secretKey = document.getElementById("secret-key");
+
+    const instance = document.getElementById("instance");
+
+    for (const input of document.querySelectorAll("input")) {
+      input.addEventListener("input", updateUrl);
+    }
+    for (const select of document.querySelectorAll("select")) {
+      select.addEventListener("change", updateUrl);
+    }
+
+    provider.addEventListener("change", function() {
+      for (const service of document.getElementsByClassName("service-info")) {
+        service.classList.add("hide");
+      }
+      for (const service of document.getElementsByClassName(this.value)) {
+        service.classList.remove("hide");
+      }
+
+      const service = services[this.value];
+      accessKeyLabel.textContent = service.accessKey + ":";
+      secretKeyLabel.textContent = service.secretKey + ":";
+    });
+
+    function endpoint() {
+      switch (provider.value) {
+        case "r2":
+          const account = cfAccountId.value || "<ACCOUNT_ID>";
+          return account + ".r2.cloudflarestorage.com";
+        case "google":
+          return "storage.googleapis.com";
+        default:
+          return document.getElementById(provider.value + "-endpoint").value;
+      }
+    }
+
+    function updateUrl() {
+      const service = services[provider.value];
+
+      const accessKeyVal = encodeURIComponent(accessKey.value)
+        || "<" + service.accessKey.toUpperCase().replace(/ /g, "_") + ">";
+      const secretKeyVal = encodeURIComponent(secretKey.value)
+        || "<" + service.secretKey.toUpperCase().replace(/ /g, "_") + ">";
+
+      const instanceVal = instance.value || "git-lfs-s3-proxy.pages.dev";
+
+      const bucketVal = bucket.value || "<BUCKET>";
+
+      const urlText = "https://" + accessKeyVal + ":" + secretKeyVal + "@"
+        + instanceVal + "/" + endpoint() + "/" + bucketVal;
+
+      document.getElementById("url").textContent = urlText;
+      document.getElementById("locksverify-cmd").textContent =
+        "git config lfs." + urlText + ".locksverify false";
+    }
+
+    const base36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+    bucket.placeholder += "-";
+    for (let i = 0; i < 8; i++) {
+      bucket.placeholder += base36.charAt(Math.floor(Math.random() * 36));
+    }
+
+    function copyUrl() {
+      const copyBtn = document.getElementById("copy-btn");
+      navigator.clipboard.writeText(document.getElementById("url").textContent).then(() => {
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "Copy URL";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      });
+    }
+
+    function copyLocksCmd() {
+      const copyBtn = document.getElementById("copy-locks-btn");
+      navigator.clipboard.writeText(document.getElementById("locksverify-cmd").textContent).then(() => {
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "Copy Command";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      });
+    }
+
+    updateUrl();
+  </script>
+</body>
+</html>
