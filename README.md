@@ -155,6 +155,18 @@ You're now ready to [start using Git LFS](https://github.com/git-lfs/git-lfs#exa
 
 # Quirks
 
+### No multipart upload support
+
+Git LFS S3 Proxy does not currently support [multipart uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html) for large files. Files that exceed S3's single-part upload limit (typically 5 GB, but some providers use lower limits) will fail with HTTP 413 errors ([#7](https://github.com/twilligon/git-lfs-s3-proxy/issues/7)).
+
+Some S3-compatible providers may enforce even lower limits for single-part uploads. If you encounter 413 errors when uploading large files, you may need to:
+
+- Use a different storage provider with higher single-part upload limits
+- Split large files into smaller chunks before adding them to LFS
+- Use a different LFS server implementation that supports multipart uploads
+
+This limitation also means Git LFS S3 Proxy cannot handle the full range of file sizes that Git LFS was designed to support.
+
 ### GitLab: Disable built-in LFS
 
 GitLab "helpfully" rejects commits containing "missing" LFS objects. After configuring a non-GitLab LFS server, GitLab will consider all new LFS objects "missing" and reject new commits:
