@@ -1,0 +1,5 @@
+{
+"name": "lfs-r2-proxy",
+"compatibility_date": "2025-12-25",
+"main": "_worker.js"
+}
